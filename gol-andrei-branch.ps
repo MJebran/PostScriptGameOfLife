@@ -1,0 +1,169 @@
+/arg {exch def} def
+
+% setup
+% sample array to view drawboard functionality
+/arrayy [[0 0 0 1 0]
+         [0 0 0 1 0]
+         [0 1 0 1 0]] def
+
+% redefines the passed in array
+/map {
+    2 dict begin
+    /f arg
+    /ar arg
+
+    ar aload pop
+    ar length {
+      f
+      ar length 1 roll  
+    } repeat
+    ar astore
+end} def
+
+/neighbors-of {
+
+} def
+
+%private function for next-generation
+/mark-neighbors-in-row{
+    1 dict begin
+    /ar arg
+    
+    0 1 arr length {
+        % if only current element equals 1 + save i on stack
+        dup ar exch get 2 mod 1 eq{
+            dup ar exch -1 mark-left-or-right-neighbor
+                ar exch +1 mark-left-or-right-neighbor
+        } if
+    } for
+end} def
+%(ar) (i) (-1 for left, +1 for right)
+%array, index, 
+/mark-left-or-right-neighbor{
+    3 dict begin
+    /l-or-r arg
+    /i arg
+    /ar arg
+
+    %if i(+-1) > 0 and < ar.length
+    i l-or-r add 0 gt i l-or-r add ar length lt and {
+        i l-or-r add dup ar exch get 2 add % get ar[i- 1] + 2
+        ar 3 1 roll % set up (ar) (i - 1) (ar[i - 1] + 2) put
+        put    
+    } if
+end} def
+
+
+% update
+% what should return?
+%   - opt 1:
+%       return the full board (array of row arrays), summing up 2 to every
+%       neighbor of every living cell
+%       arrayy [[0 0 0 1 0]
+%               [0 0 0 1 0]
+%               [0 1 0 1 0]] def
+%   - Example (arrayy should return)
+        %       [[0 0 4 3 4]
+        %        [2 2 8 5 6]
+        %        [2 1 6 3 4]]
+%   - next generation rules:
+%       in the option of storing the sum at a position, the rules are:
+%       if current position >= 5 and <= 7, will live in the next generation.
+%       => if >= 5 and <= 7, insert 1; otherwise, insert 0.
+%   - Output (or set the passed in array to):
+        %       [[0 0 0 0 0]
+        %        [0 0 0 1 1]
+        %        [0 0 1 0 0]] 
+/next-generation {
+    
+} def 
+/drawsquare {
+	4 dict begin
+
+	/rgb arg
+    /size arg
+    /y arg
+    /x arg
+
+    newpath
+    x y moveto
+    size 0 rlineto
+    0 size rlineto
+    size neg 0 rlineto
+    closepath
+    
+    rgb aload pop
+    setrgbcolor
+    
+    fill
+
+    end
+} def
+
+%?Convert bit matrix into GUI size
+/convertXY {
+    0 dict begin
+    
+    /size arg
+    /numberRows arg
+    /column arg
+    /row arg
+
+    column size mul  % x
+    numberRows 1 sub row sub size mul %y
+    
+    end
+} def
+
+%draw
+/draw-board
+{
+    /size arg
+	/arr arg
+    /rgb 0 def
+    
+    0 1 2 { 
+        /row arg % def y = i
+			
+        0 1 4 {
+            /column arg %def x = i
+
+            arr row get column get 1 eq % is this a bit matrix?
+            {
+                /rgb [1.0 0.7 0.0] def
+            }
+            {
+                /rgb [0 0 1] def
+            } ifelse
+
+            row column arr length size convertXY size rgb drawsquare
+        } for
+    } for
+} def
+
+/assert-are-equal {
+	0 dict begin
+    /observed arg
+    /expected arg
+    
+    observed type /arraytype eq
+    expected type /arraytype eq and {
+      observed length expected length not {
+        (bad length) == done
+      } if
+      0 1 observed length 1 sub {
+      	observed i get expected get i assert-are-equal
+      } for
+	} {
+    	observed type expected type eq not
+        observed expected eq not or {
+        	(fail) == done
+        } if
+    } ifelse
+    
+    end
+}
+
+arrayy 50 draw-board
+
+%1 1 assert-are-equal
