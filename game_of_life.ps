@@ -1,0 +1,329 @@
+/arg { exch def } def
+
+/mungus-ray
+{
+    [
+        [0 0 0 1 1 1 1 1 1 0 0 0]
+        [0 0 1 1 0 0 0 0 0 1 0 0]
+        [0 0 1 1 0 0 0 1 1 1 1 0]
+        [0 1 1 0 0 0 1 0 0 0 1 0]
+        [1 1 1 0 0 0 1 0 0 0 1 0]
+        [1 0 1 0 0 0 0 1 1 1 0 0]
+        [1 0 1 0 0 0 0 0 0 1 0 0]
+        [1 0 1 0 0 0 0 0 0 1 0 0]
+        [1 1 1 0 0 0 0 0 0 1 0 0]
+        [0 0 1 0 0 0 1 0 0 1 0 0]
+        [0 0 1 1 0 0 1 0 0 1 0 0]
+        [0 0 0 1 1 1 0 1 1 1 0 0]
+    ]
+} def
+
+/test-arr 
+{
+	[
+    	[0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 1 0 0 0 0 0 0 0 0]
+        [0 0 0 1 0 0 0 0 0 0 0 0]
+        [0 0 0 1 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+    ]
+} def
+
+/bubble-array
+{
+	[
+    	[0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 1 1 1 0 1 0 1 1 1 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 1 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+        [0 0 0 0 0 0 0 0 0 0 0 0]
+    ]
+} def
+
+/init-array {
+1 dict begin
+    /a arg
+
+    0 1 11 {
+      pop
+
+      0 1 11 {
+        pop
+
+        rand a mod 0 eq
+        { 1 } 
+        { 0 } ifelse
+      } for
+      12 array
+      astore
+
+    } for
+    12 array
+    astore
+
+end
+} def
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/get-neighbor-count {
+5 dict begin
+    /arr arg
+    /y arg
+    /x arg
+
+    x 1 sub 1 x 1 add {
+      /i arg
+
+      y 1 sub 1 y 1 add {
+        /j arg
+
+% Is in bounds
+        i 0 ge
+        j 0 ge
+        i arr 0 get length 1 sub le
+        j arr 0 get length 1 sub le
+        and and and
+        {
+% Is not the cell we are checking neighbors for
+          x i eq
+          y j eq
+          and
+          { 0 }
+          { arr j get i get }ifelse
+        }
+        { 0 } ifelse
+      } for
+    } for
+
+    add add add add add add add add
+
+end
+} def
+
+/next-generation {
+    4 dict begin
+
+    /arr arg
+
+    0 1 arr length 1 sub {
+        /row arg
+
+        0 1 arr 0 get length 1 sub {
+            /col arg
+			arr row get col get
+            1 eq
+            {
+            	% Alive
+                /ncount col row arr get-neighbor-count def
+                ncount 3 eq
+                ncount 2 eq
+                or
+                { 1 }
+                { 0 } ifelse
+            }
+            {
+            	% Dead
+                /ncount col row arr get-neighbor-count def
+                ncount 3 eq
+                { 1 }
+                { 0 } ifelse
+
+            } ifelse
+
+        } for
+        arr 0 get length array 
+        astore
+
+    } for
+    arr length array 
+    astore
+
+    end 
+} def
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/drawsquare {
+    4 dict begin
+
+    /rgb arg
+    /size arg
+    /y arg
+    /x arg
+
+    newpath
+    x y moveto
+    size 0 rlineto
+    0 size rlineto
+    size neg 0 rlineto
+    closepath
+
+    rgb aload pop
+    setrgbcolor
+
+    fill
+
+    end
+} def
+
+/draw-board
+{
+    5 dict begin
+
+    /size arg
+    /y arg
+    /x arg
+    /arr arg
+    /rgb 0 def
+
+    0 1 arr length 1 sub { 
+        /row arg
+
+        0 1 arr row get length 1 sub {
+            /column arg
+
+            arr row get column get 1 eq
+            {
+                /rgb [0.75 0 0] def
+            }
+            {
+                /rgb [0.75 0.75 0.75] def
+            } ifelse
+
+          column size mul x add
+          arr length 1 sub row sub size mul y add
+          size rgb drawsquare
+        } for
+    } for
+
+    end
+} def
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/test-next-generation
+{
+	0 dict begin
+  	test-arr next-generation
+
+    [[0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 1 1 1 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 0 0 0 0]]
+
+ 	assert-are-equal
+  
+  	end
+} def
+
+/test-get-neighbor-count
+{
+	1 dict begin
+    
+	/arr { 
+    	[[1 1 1]
+     	[1 0 1]
+     	[1 0 1]]
+     } def 
+    
+    2 1 arr get-neighbor-count
+    3
+    
+    assert-are-equal
+    
+	end
+} def
+
+/run-tests {
+	test-next-generation
+    test-get-neighbor-count
+} def
+
+/assert-are-equal {
+    0 dict begin
+        /observed arg
+        /expected arg
+        observed type /arraytype eq
+        expected type /arraytype eq and {
+            observed length expected length eq not {
+                (Assertion Failed! Lengths do not match (expected/observed):\n\t) print
+                expected ==
+                (\t) print
+                observed ==
+                stop
+            } if
+            0 1 observed length 1 sub {
+                /i arg
+                observed i get expected i get assert-are-equal
+            } for
+        } {
+            observed type expected type eq not
+            observed expected eq not or {
+                (Assertion Failed! Values do not match (expected/observed):\n\t) print
+                expected ==
+                (\t) print
+                observed ==
+                stop
+            } if
+        } ifelse
+
+    end
+} def
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/main  {
+    5 dict begin
+    /rows 3 def
+    /cols 2 def
+
+  /board 5 init-array def
+  0 1 rows {
+      /row arg
+
+      0 1 cols { 
+            /col arg
+
+            board
+            15 12 mul col mul 10 col mul add 10 add % x start
+            15 12 mul row mul 10 row mul add 10 add % y start
+
+            10 draw-board
+
+        	/board board next-generation def 
+      } for
+  } for
+
+  end
+} def
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%run-tests
+main
+
+pstack
